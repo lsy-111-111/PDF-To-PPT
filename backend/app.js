@@ -25,6 +25,9 @@ app.use("/", express.static(path.join(__dirname, "../client/public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "client", "index.html"));
 });
+app.get("/sam2-analysis", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "client", "sam2-analysis.html"));
+});
 
 // Define the route for PDF conversion
 app.post("/convert", upload.single("pdfFile"), async (req, res) => {
