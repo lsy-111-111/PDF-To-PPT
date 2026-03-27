@@ -3,8 +3,13 @@ const PDFServicesSdk = require("@adobe/pdfservices-node-sdk");
 const fs = require("fs");
 const multer = require("multer");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const archiver = require("archiver");
+const {
+  buildCnnConvertArgs,
+  buildEditorCommandArgs,
+  isTruthyFlag,
+} = require("./pythonCommands");
 
 const app = express();
 const port = 3000;
@@ -37,6 +42,8 @@ app.post("/convert", upload.single("pdfFile"), async (req, res) => {
   const image_editable = req.body.images_edit === "true"; // Access the checkbox value
   const non_text = req.body.non_text === "true"; // Access the checkbox value
   const download_images = req.body.download_images === "true"; // Access the checkbox value
+  const use_sam2 =
+    isTruthyFlag(req.body.use_sam2) || isTruthyFlag(process.env.PDF_TO_PPT_USE_SAM2);
   //console.log(`1: ${image_editable}, 2: ${download_images}`)
   const unique = `${Date.now()}_${Math.floor(Math.random() * 1000)}`; // Generate unique name for file
 
@@ -61,8 +68,14 @@ app.post("/convert", upload.single("pdfFile"), async (req, res) => {
   const python_image_edit = () => {
     try {
       console.log("Image Edit Running");
-      const result = execSync(
-        `python editortry.py ${uniquePDF} ${download_images}`
+      const result = execFileSync(
+        "python",
+        buildEditorCommandArgs({
+          dirName: uniquePDF,
+          downloadImages: download_images,
+          useSam2: use_sam2,
+        }),
+        { cwd: __dirname }
       );
       console.log(`Python script output: ${result.toString()}`);
     } catch (error) {
@@ -73,8 +86,13 @@ app.post("/convert", upload.single("pdfFile"), async (req, res) => {
   const cnn_convert = () => {
     try {
       console.log("CNN Convert Running");
-      const result = execSync(
-        `python cnn_convertor.py ${uniquePDF} ${download_images}`
+      const result = execFileSync(
+        "python",
+        buildCnnConvertArgs({
+          dirName: uniquePDF,
+          downloadImages: download_images,
+        }),
+        { cwd: __dirname }
       );
       console.log(`Python script output: ${result.toString()}`);
     } catch (error) {
