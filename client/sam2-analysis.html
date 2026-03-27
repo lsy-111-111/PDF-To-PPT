@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAM 2 模型分析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-50 text-slate-900">
+    <div class="mx-auto max-w-6xl px-6 py-10 lg:px-8">
+      <div class="flex flex-col gap-4 border-b border-slate-200 pb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <a href="/" class="text-sm font-semibold text-indigo-600">← 返回 PDF 转 PPT</a>
+          <h1 class="mt-3 text-4xl font-bold tracking-tight">SAM 2 模型分析</h1>
+          <p class="mt-3 max-w-3xl text-base leading-7 text-slate-600">
+            基于 Facebook Research 开源仓库
+            <a
+              href="https://github.com/facebookresearch/sam2"
+              class="font-medium text-indigo-600 underline"
+              target="_blank"
+              rel="noreferrer"
+              >facebookresearch/sam2</a
+            >
+            的公开说明，整理模型定位、结构、优缺点、部署要求与适用场景，方便快速判断是否值得在实际项目中接入。
+          </p>
+        </div>
+        <div class="rounded-2xl bg-indigo-600 px-5 py-4 text-white shadow-lg">
+          <p class="text-sm uppercase tracking-[0.2em] text-indigo-100">一句话总结</p>
+          <p class="mt-2 max-w-sm text-sm leading-6">
+            SAM 2 是一个“可提示式分割”基础模型，把单图像统一为单帧视频，并通过流式记忆机制把图像分割能力扩展到视频目标分割与跟踪。
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-8 grid gap-6 lg:grid-cols-3">
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+          <h2 class="text-xl font-semibold">1. 模型是什么</h2>
+          <div class="mt-4 space-y-4 text-sm leading-7 text-slate-700">
+            <p>
+              SAM 2（Segment Anything Model 2）是 Meta/Facebook Research 推出的视觉基础模型，目标是统一解决
+              <strong>图像分割</strong> 与 <strong>视频分割/跟踪</strong>。
+            </p>
+            <p>
+              与初代 SAM 相比，SAM 2 不再只关注静态图像，而是把图像视作只有一帧的视频，从而让同一套架构同时服务图片与视频场景。
+            </p>
+            <p>
+              它仍然保留了“点、框、mask 等提示输入”的交互范式，因此很适合做交互式标注、视频目标跟踪、医学影像轮廓修正、工业质检区域提取等任务。
+            </p>
+          </div>
+        </section>
+
+        <section class="rounded-2xl bg-slate-900 p-6 text-white shadow-sm">
+          <h2 class="text-xl font-semibold">2. 核心价值</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-200">
+            <li>• 同时支持 image / video 两类分割任务</li>
+            <li>• 支持交互式提示，适合人机协同标注</li>
+            <li>• 视频中可利用历史帧记忆做连续跟踪</li>
+            <li>• 有 tiny / small / base+ / large 多种规模权衡</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">3. 为什么它比 SAM 更强</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li>
+              <strong>统一建模：</strong>把图像和视频统一到一个“可提示分割”框架，降低了模型切换成本。
+            </li>
+            <li>
+              <strong>流式记忆（streaming memory）：</strong>处理视频时保留历史信息，能更稳地延续目标身份与边界。
+            </li>
+            <li>
+              <strong>更强的视频能力：</strong>不仅能在首帧打点，还能把对象 mask 在后续帧持续传播。
+            </li>
+            <li>
+              <strong>数据引擎加持：</strong>官方通过 model-in-the-loop 的 SA-V 数据集持续提升视频分割泛化。
+            </li>
+          </ul>
+        </section>
+
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">4. 架构理解（面向工程）</h2>
+          <ol class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li><strong>① 图像/视频编码：</strong>先提取每帧视觉特征。</li>
+            <li><strong>② 提示编码：</strong>把点、框、已有 mask 编码成查询条件。</li>
+            <li><strong>③ 记忆融合：</strong>视频任务中把历史帧目标信息写入 memory，再与当前帧交互。</li>
+            <li><strong>④ 掩码解码：</strong>输出当前对象 mask，并继续传给后续帧。</li>
+          </ol>
+          <p class="mt-4 text-sm leading-7 text-slate-700">
+            这套设计的关键不只是“分得准”，而是能在交互修正后快速更新并延续到后续视频帧。
+          </p>
+        </section>
+      </div>
+
+      <section class="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">5. 官方公开的 SAM 2.1 版本取舍</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">
+              以下数据整理自官方 README，适合做部署时的规模选择参考。
+            </p>
+          </div>
+          <p class="text-xs text-slate-500">指标：参数量 / FPS / SA-V test J&amp;F / MOSE val J&amp;F / LVOS v2 J&amp;F</p>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+              <tr>
+                <th class="px-4 py-3 font-semibold">模型</th>
+                <th class="px-4 py-3 font-semibold">参数量</th>
+                <th class="px-4 py-3 font-semibold">FPS</th>
+                <th class="px-4 py-3 font-semibold">SA-V</th>
+                <th class="px-4 py-3 font-semibold">MOSE</th>
+                <th class="px-4 py-3 font-semibold">LVOS v2</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr>
+                <td class="px-4 py-3 font-medium">sam2.1_hiera_tiny</td>
+                <td class="px-4 py-3">38.9M</td>
+                <td class="px-4 py-3">91.2</td>
+                <td class="px-4 py-3">76.5</td>
+                <td class="px-4 py-3">71.8</td>
+                <td class="px-4 py-3">77.3</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-medium">sam2.1_hiera_small</td>
+                <td class="px-4 py-3">46M</td>
+                <td class="px-4 py-3">84.8</td>
+                <td class="px-4 py-3">76.6</td>
+                <td class="px-4 py-3">73.5</td>
+                <td class="px-4 py-3">78.3</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-medium">sam2.1_hiera_base_plus</td>
+                <td class="px-4 py-3">80.8M</td>
+                <td class="px-4 py-3">64.1</td>
+                <td class="px-4 py-3">78.2</td>
+                <td class="px-4 py-3">73.7</td>
+                <td class="px-4 py-3">78.2</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-medium">sam2.1_hiera_large</td>
+                <td class="px-4 py-3">224.4M</td>
+                <td class="px-4 py-3">39.5</td>
+                <td class="px-4 py-3">79.5</td>
+                <td class="px-4 py-3">74.6</td>
+                <td class="px-4 py-3">80.6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">6. 优势</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li><strong>交互成本低：</strong>少量点击或一个框，往往就能得到较高质量的 mask。</li>
+            <li><strong>视频连续性强：</strong>相比单帧逐张分割，更适合需要时序一致性的任务。</li>
+            <li><strong>工程接口完整：</strong>官方提供 image predictor、video predictor、Hugging Face 加载方式。</li>
+            <li><strong>可扩展：</strong>2024 年后官方已公开训练/微调代码，更利于定制行业数据。</li>
+          </ul>
+        </section>
+
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">7. 局限与风险</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li><strong>不是万能语义理解模型：</strong>它擅长“分割”，不等于擅长“理解业务语义”。</li>
+            <li><strong>长视频显存压力大：</strong>高分辨率、长时序、多对象场景对 GPU 要求明显提升。</li>
+            <li><strong>边界稳定性仍受提示影响：</strong>遮挡、快速形变、细小目标时需要多轮修正。</li>
+            <li><strong>落地仍需后处理：</strong>实际系统通常还要叠加跟踪、规则过滤、业务标签映射。</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">8. 适合什么场景</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li>• 视频目标交互式标注、数据集生产</li>
+            <li>• 医学/遥感/工业视觉中的区域勾画辅助</li>
+            <li>• 短视频主体抠像、跟踪、编辑</li>
+            <li>• 机器人/自动驾驶中的目标区域提示式分割</li>
+          </ul>
+        </section>
+
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 class="text-xl font-semibold">9. 不适合直接拿来就用的场景</h2>
+          <ul class="mt-4 space-y-3 text-sm leading-7 text-slate-700">
+            <li>• 需要强语义分类但没有分割需求的任务</li>
+            <li>• 完全无交互且对零样本稳定性要求极高的复杂视频管线</li>
+            <li>• 资源非常受限、只能在 CPU 或小显存设备上跑长视频</li>
+            <li>• 需要严格实例 ID 保持、且业务容错极低的多目标跟踪系统</li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="mt-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 class="text-xl font-semibold">10. 如果你准备落地，建议这样选型</h2>
+        <div class="mt-4 grid gap-4 md:grid-cols-3">
+          <div class="rounded-xl bg-slate-50 p-4">
+            <h3 class="font-semibold">快速验证</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-700">
+              先从 <strong>tiny / small</strong> 开始，验证提示交互流程、显存占用和推理延迟。
+            </p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-4">
+            <h3 class="font-semibold">效果优先</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-700">
+              如果目标边界复杂、遮挡多，可尝试 <strong>base+ / large</strong>，但要同步评估吞吐下降。
+            </p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-4">
+            <h3 class="font-semibold">业务接入</h3>
+            <p class="mt-2 text-sm leading-6 text-slate-700">
+              把 SAM 2 当作“高质量候选 mask 生成器”，后面接业务规则、分类器或人工审核更稳。
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-6 rounded-2xl bg-indigo-50 p-6 shadow-sm ring-1 ring-indigo-100">
+        <h2 class="text-xl font-semibold text-indigo-950">11. 结论</h2>
+        <p class="mt-4 text-sm leading-7 text-indigo-950">
+          如果你的核心需求是“让用户通过少量提示完成高质量图像/视频分割”，SAM 2 是目前非常值得重点评估的基础模型；
+          如果你的问题更偏分类、检测或文本理解，它就不一定是最合适的中心模型。最实用的定位是：
+          <strong>把 SAM 2 作为视觉交互分割与视频 mask 传播引擎</strong>，而不是把它当成完整业务系统的全部能力。
+        </p>
+      </section>
+    </div>
+  </body>
+</html>
