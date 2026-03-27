@@ -5,6 +5,7 @@ const multer = require("multer");
 const path = require("path");
 const { execSync } = require("child_process");
 const archiver = require("archiver");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 const port = 3000;
@@ -21,11 +22,18 @@ fs.promises.mkdir(pptxDirectory, { recursive: true }).catch(console.error);
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+const sam2AnalysisRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use("/", express.static(path.join(__dirname, "../client/public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "client", "index.html"));
 });
-app.get("/sam2-analysis", (req, res) => {
+app.get("/sam2-analysis", sam2AnalysisRateLimit, (req, res) => {
   res.sendFile(path.join(__dirname, "..", "client", "sam2-analysis.html"));
 });
 
