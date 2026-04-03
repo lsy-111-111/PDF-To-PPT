@@ -37,6 +37,13 @@
         text-align: center;
       }
 
+      .hero-action > label,
+      .hero-action > button {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
       .option-group {
         display: flex;
         flex-wrap: wrap;
@@ -215,17 +222,19 @@
                 <input class="" type="file" id="pdfFile" accept=".pdf" hidden />
                 <label
                   for="pdfFile"
-                  class="hero-action rounded-md px-3.5 py-2.5 text-sm ring-2 ring-indigo-600 font-semibold text-indigo-600 shadow-sm hover:bg-indigo-600 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  class="rounded-md px-3.5 py-2.5 text-sm ring-2 ring-indigo-600 font-semibold text-indigo-600 shadow-sm hover:bg-indigo-600 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >Upload a File</label
                 >
               </div>
 
-              <button
-                id="convertButton"
-                class="hero-action rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-              >
-                Convert to PPT →
-              </button>
+              <div class="hero-action">
+                <button
+                  id="convertButton"
+                  class="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                >
+                  Convert to PPT →
+                </button>
+              </div>
             </div>
             <div id="loader" class="loader hidden mx-auto mt-4"></div>
 
